@@ -1,0 +1,58 @@
+@ALIGN NONE
+@SBA 0,0
+@SF P
+Hercules Version  :
+@SF HP
+$(VERSION)
+@NL
+@SF P
+Host name         :
+@SF HP
+$(HOSTNAME)
+@NL
+@SF P
+Host OS           :
+@SF HP
+$(HOSTOS)-$(HOSTOSREL) $(HOSTOSVER)
+@NL
+@SF P
+Host Architecture :
+@SF HP
+$(HOSTARCH)
+@NL
+@SF P
+Processors        :
+@SF HP
+$(HOSTNUMCPUS)
+@NL
+@SF P
+LPAR Name         :
+@SF HP
+$(LPARNAME)
+@NL
+@SF P
+Device number     :
+@SF HP
+$(CSS):$(CCUU)
+@NL
+@SF P
+Subchannel        :
+@SF HP
+$(SUBCHAN)
+@SF P
+@ALIGN LEFT
+
+
+              __  ___  _    __   ______
+             /  !/  / ! !  / /  /_  __/
+            / /!_/ /  ! ! / /    / /                A P L \ 3 6 0
+           / /  / /   ! !/ /    / /
+          /_/  /_/    !___/    /_/   __ __            Version 1
+                                    / // /       Modification Level 1
+                                   / // /_  5734-XM6 (c) Copyright IBM Corp
+             OS/360-MVT 21.8F     /__  __/         1969, 1970, 1972
+                                    /_/    ___      ____      __
+                 Hercules                 /   !    / __ \    / /
+   The S/370, ESA/390 and z/Architecture / /! !   / /_/ /   / /
+                 Emulator               / ___ !  / ____/   / /___
+                                       /_/  !_! /_/       /_____/

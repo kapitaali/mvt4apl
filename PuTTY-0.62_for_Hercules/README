@@ -1,0 +1,32 @@
+PuTTY Patch for use with Hercules Console
+=========================================
+
+_EITHER_ use the files in folder source to build PuTTY from source
+_OR_ simply run it using the ready to run files from folder bin.
+
+Don't use the configuration files in folder sessions for non-APL\360 sessions!
+For regular console sessions just start using the default configuration and
+switch to passive negotiation on the telnet configuration panel.
+
+source:
+-------
+putty_hercules.patch           patch for Hercules console compatibility
+putty-0.62-source-windows.zip  unmodified source for Windows systems
+putty-0.62-source-linux.tgz    unmodified source for Linux/Unix systems
+
+bin:
+----
+putty-0.62-binary-windows.zip  Windows binaries built from patched source
+putty-0.62-binary-linux.tgz    Linux binaries built from patched source
+
+sessions:
+---------
+APL360_Linux                   Linux parameter file: Copy to ~/.putty/sessions
+                               for use with APL\360, don't use for non-APL\360
+                               sessions.
+APL360_Windows.reg             Windows registry keys: Import into the registry
+                               for use with APL\360, don't use for non-APL\360
+                               sessions.
+
+----------------
+2012/12/21, Juergen Winkelmann, winkelmann@id.ethz.ch

@@ -1,0 +1,29 @@
+#**********************************************************************
+#***                                                                ***
+#*** Script:  aplinst2                                              ***
+#***                                                                ***
+#*** Purpose: Continue APL\360 installation.                        ***
+#***                                                                ***
+#*** Updated: 2013/03/23                                            ***
+#***                                                                ***
+#**********************************************************************
+hao tgt IEF404I MAKELOAD
+hao cmd script aplinst/release_aplsconf
+hao tgt IEF404I APLSCONF
+hao cmd script aplinst/release_aplgen
+hao tgt IEF404I APLGEN
+hao cmd script aplinst/release_linksvc
+hao tgt IEF404I LINKSVC
+hao cmd script aplinst/release_makelib
+hao tgt IEF404I MAKELIB
+hao cmd script aplinst/shutdown
+pause 1
+/mn sess,t
+pause 1
+/mn sess,t
+pause 1
+/mn jobnames,t
+pause 1
+/mn jobnames,t
+pause 1
+/$a'makeload'

@@ -1,0 +1,668 @@
+--- a/console.c	2012-11-30 11:13:08.000000000 +0100
++++ b/console.c	2012-12-14 23:24:52.000000000 +0100
+@@ -54,6 +54,14 @@
+ /* WinNT version of telnet works. -- Greg Price (implemted by Fish)  */
+ /*-------------------------------------------------------------------*/
+ 
++/*-------------------------------------------------------------------*/
++/* 1052 console keyboard modification to support APL\360:            */
++/* The APL\360 path is taken when the terminal belongs to group APL, */
++/* else the original 1052 path is taken without any modifications.   */
++/*                                                                   */
++/*                                      14/12/12 Juergen Winkelmann. */
++/*-------------------------------------------------------------------*/
++
+ #include "hstdinc.h"
+ #include "hercules.h"
+ #include "hexterns.h"
+@@ -123,6 +131,79 @@
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,  /* E0 */
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; /* F0 */
+ /*-------------------------------------------------------------------*/
++/* Translate tables and constants for APL\360                        */
++/*-------------------------------------------------------------------*/
++static unsigned char
++terminal_to_apl[] = {
++    "\x00\x01\x02\x03\x37\x2D\x2E\x2F\x16\x05\x00\x0B\x0C\x15\x0E\x0F"
++    "\x10\x11\x12\x13\x3C\x3D\x32\x26\x18\x19\x1A\x27\x22\x1D\x35\x1F"
++    "\x40\x4D\x7E\x4C\x5F\x5D\x5C\x7B\x7F\x4F\x7D\x6C\x6B\x50\x4B\x61"
++    "\xF0\xF1\xF2\xF3\xF4\xF5\xF6\xF7\xF8\xF9\x5A\x5B\x7A\x7C\x4A\x6D"
++    "\x4E\xC1\xC2\xC3\xC4\xC5\xC6\xC7\xC8\xC9\xD1\xD2\xD3\xD4\xD5\xD6"
++    "\xD7\xD8\xD9\xE2\xE3\xE4\xE5\xE6\xE7\xE8\xE9\x60\xE0\xBD\x5E\x6E"
++    "\x79\x81\x82\x83\x84\x85\x86\x87\x88\x89\x91\x92\x93\x94\x95\x96"
++    "\x97\x98\x99\xA2\xA3\xA4\xA5\xA6\xA7\xA8\xA9\x6F\x6A\xD0\xA1\x07"
++    "\x68\xDC\x51\x42\x43\x44\x47\x48\x52\x53\x54\x57\x56\x58\x63\x67"
++    "\x71\x9C\x9E\xCB\xCC\xCD\xDB\xDD\xDF\xEC\xFC\xB0\xB1\xB2\xB3\xB4"
++    "\x45\x55\xCE\xDE\x49\x69\x04\x06\xAB\x08\xBA\xB8\xB7\xAA\x8A\x8B"
++    "\x09\x0A\x14\xBB\x15\xB5\xB6\x17\x1B\xB9\x1C\x1E\xBC\x20\xBE\xBF"
++    "\x21\x23\x24\x28\x29\x2A\x2B\x2C\x30\x31\xCA\x33\x34\x36\x38\xCF"
++    "\x39\x3A\x3B\x3E\x41\x46\x4A\x4F\x59\x62\xDA\x64\x65\x66\x70\x72"
++    "\x73\xE1\x74\x75\x76\x77\x78\x80\x8C\x8D\x8E\xEB\x8F\xED\xEE\xEF"
++    "\x90\x9A\x9B\x9D\x9F\xA0\xAC\xAE\xAF\xFD\xFE\xFB\x3F\xEA\xFA\xFF"
++};
++
++static unsigned char
++apl_to_terminal[] = {
++    "\x00\x01\x02\x03\xA6\x09\xA7\x7F\xA9\xB0\xB1\x0B\x0C\x0D\x0E\x0F"
++    "\x10\x11\x12\x13\xB2\x0A\x08\xB7\x18\x19\x1A\xB8\xBA\x1D\xBB\x1F"
++    "\xBD\xC0\x1C\xC1\xC2\x0A\x17\x1B\xC3\xC4\xC5\xC6\xC7\x05\x06\x07"
++    "\xC8\xC9\x16\xCB\xCC\x1E\xCD\x04\xCE\xD0\xD1\xD2\x14\x15\xD3\xFC"
++    "\x20\xD4\x83\x84\x85\xA0\xD5\x86\x87\xA4\x3E\x2E\x23\x21\x40\x29"
++    "\x2D\x82\x88\x89\x8A\xA1\x8C\x8B\x8D\xD8\x3A\x3B\x26\x25\x5E\x24"
++    "\x5B\x2F\xD9\x8E\xDB\xDC\xDD\x8F\x80\xA5\x7C\x2C\x2B\x3F\x5F\x7B"
++    "\xDE\x90\xDF\xE0\xE2\xE3\xE4\xE5\xE6\x60\x3C\x27\x3D\x2A\x22\x28"
++    "\xE7\x61\x62\x63\x64\x65\x66\x67\x68\x69\xAE\xAF\xE8\xE9\xEA\xEC"
++    "\xF0\x6A\x6B\x6C\x6D\x6E\x6F\x70\x71\x72\xF1\xF2\x91\xF3\x92\xF4"
++    "\xF5\x7E\x73\x74\x75\x76\x77\x78\x79\x7A\xAD\xA8\xF6\x5B\xF7\xF8"
++    "\x9B\x9C\x9D\x9E\x9F\xB5\xB6\xAC\xAB\xB9\xAA\xB3\xBC\x5D\xBE\xBF"
++    "\x7B\x41\x42\x43\x44\x45\x46\x47\x48\x49\xCA\x93\x94\x95\xA2\xCF"
++    "\x7D\x4A\x4B\x4C\x4D\x4E\x4F\x50\x51\x52\xDA\x96\x81\x97\xA3\x98"
++    "\x5C\xE1\x53\x54\x55\x56\x57\x0A\x59\x08\xFD\xEB\x99\xED\xEE\xEF"
++    "\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\xFE\xFB\x9A\xF9\xFA\xFF"
++};
++
++static unsigned char
++host_to_terminal[] = {
++    "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
++    "\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
++    "\x20\xdd\x20\xd4\x20\x2b\x20\x4b\x3a\x22\x50\x2d\x2c\x5f\x2e\x2f"
++    "\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x3e\x3c\x23\x25\x26\x51"
++    "\x40\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f"
++    "\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7a\x3b\x3f\x27\x29\x46"
++    "\x60\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xeb\xec\xed\xee"
++    "\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\x7b\x4d\x7d\x54\x7f"
++    "\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f"
++    "\x90\x91\x92\x93\x94\x95\x96\x97\x98\x99\x9a\x9b\x9c\x9d\x9e\x9f"
++    "\xa0\xa1\xa2\xa3\xa4\xa5\xa6\xa7\xa8\xa9\xaa\xab\xac\xad\xae\xaf"
++    "\xb0\xb1\xb2\xb3\xb4\xb5\xb6\xb7\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf"
++    "\xc0\xc1\xc2\xc3\xc4\xc5\xc6\xc7\xc8\xc9\xca\xcb\xcc\xcd\xce\xcf"
++    "\xd0\xd1\xd2\xd3\xd4\xd5\xd6\xd7\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf"
++    "\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xeb\xec\xed\xee\xef"
++    "\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff"
++};
++#define APL_EOB   0x00                  /* APL EOB                   */
++#define APL_CR    0x15                  /* APL CR                    */
++#define APL_LF    0x25                  /* APL LF                    */
++#define APL_NL    0x58                  /* APL NL (pseudo)           */
++#define APL_BS    0x5a                  /* APL BS (pseudo)           */
++#define TRM_BS    0x08                  /* Terminal BS               */
++#define TRM_NL    0x0a                  /* Terminal NL               */
++#define TRM_CR    0x0d                  /* Terminal CR               */
++#define TRM_CHERR 0xf7                  /* Terminal CHARACTER ERROR  */
++#define BLACK       30                  /* ansi colour black         */
++#define RED         31                  /* ansi colour red           */
++/*-------------------------------------------------------------------*/
+ /* Telnet command definitions                                        */
+ /*-------------------------------------------------------------------*/
+ #define BINARY          0       /* Binary Transmission */
+@@ -260,7 +341,7 @@
+ #define TNSERROR        logmsg
+ 
+ #define BUFLEN_3270     65536           /* 3270 Send/Receive buffer  */
+-#define BUFLEN_1052     150             /* 1052 Send/Receive buffer  */
++#define BUFLEN_1052     600             /* 1052 Send/Receive buffer  */
+ 
+ 
+ #undef  FIX_QWS_BUG_FOR_MCS_CONSOLES
+@@ -519,6 +600,23 @@
+ 
+ 
+ /*-------------------------------------------------------------------*/
++/* SUBROUTINE TO CHANGE THE 1052 PRINT RIBBON COLOUR                 */
++/*-------------------------------------------------------------------*/
++static void
++select_ribbon (int csock, int colour)
++{
++int rc;
++char ansii[6];
++
++    sprintf(ansii,"%c[%dm", 0x1B, colour);
++    rc = send_packet (csock, (BYTE *) ansii, 5, NULL);
++
++    return;
++
++} /* end function select_ribbon */
++
++
++/*-------------------------------------------------------------------*/
+ /* SUBROUTINE TO RECEIVE A DATA PACKET FROM THE CLIENT               */
+ /* This subroutine receives bytes from the client.  It stops when    */
+ /* the receive buffer is full, or when the last two bytes received   */
+@@ -1054,6 +1152,21 @@
+ int     i;                              /* Array subscript           */
+ BYTE    buf[BUFLEN_1052];               /* Receive buffer            */
+ BYTE    c;                              /* Character work area       */
++BYTE    apl_cursor[4];                  /* APL: Cursor control       */
++BYTE    apl_low;                        /* APL: low overstrike char  */
++BYTE    apl_high;                       /* APL: high overstrike char */
++BYTE    apl_over1;                      /* APL: Decomposed overstrike*/
++BYTE    apl_over2;                      /* APL: Decomposed overstrike*/
++
++    /* Prevent APL\360 race condition: Poll every second until connected */
++    if (dev->connected == 0 && strcasecmp(dev->filename, "apl") == 0)
++    {
++        while (1)
++        {
++            usleep(1000);
++            if (dev->connected != 0) break;
++        }
++    }
+ 
+     /* Receive bytes from client */
+     num = recv (dev->fd, buf, BUFLEN_1052, 0);
+@@ -1080,8 +1193,9 @@
+     /* Copy received bytes to keyboard buffer */
+     for (i = 0; i < num; i++)
+     {
+-        /* Decrement keyboard buffer pointer if backspace received */
+-        if (buf[i] == 0x08)
++        /* Decrement keyboard buffer pointer if backspace received
++           from non APL terminal */
++        if (buf[i] == 0x08 && strcasecmp(dev->filename, "apl") != 0)
+         {
+             if (dev->keybdrem > 0) dev->keybdrem--;
+             continue;
+@@ -1094,6 +1208,14 @@
+             return (CSW_ATTN | CSW_UX);
+         }
+ 
++        /* Raise attention and erase input if control-A
++           received from APL terminal */
++        if (buf[i] == 0x01 && strcasecmp(dev->filename, "apl") == 0)
++        {
++            dev->keybdrem = 0;
++            return (CSW_ATTN | CSW_DE);
++        }
++
+         /* Return unit check if buffer is full */
+         if (dev->keybdrem >= BUFLEN_1052)
+         {
+@@ -1103,6 +1225,37 @@
+             return (CSW_ATTN | CSW_UC);
+         }
+ 
++        /* Expand overstrikes if entered directly at APL terminal */
++        if (strcasecmp(dev->filename, "apl") == 0)
++        {
++            c = 0x01;
++            if      (buf[i] == 0xcd) {dev->buf[dev->keybdrem++] = 0x46; dev->buf[dev->keybdrem++] = APL_BS; buf[i] = 0x48;}
++            else if (buf[i] == 0xd0) {dev->buf[dev->keybdrem++] = 0x3f; dev->buf[dev->keybdrem++] = APL_BS; buf[i] = 0x5f;}
++            else if (buf[i] == 0xd1) {dev->buf[dev->keybdrem++] = 0x4f; dev->buf[dev->keybdrem++] = APL_BS; buf[i] = 0x5f;}
++            else if (buf[i] == 0xd2) {dev->buf[dev->keybdrem++] = 0x2f; dev->buf[dev->keybdrem++] = APL_BS; buf[i] = 0x5f;}
++            else if (buf[i] == 0xd3) {dev->buf[dev->keybdrem++] = 0x47; dev->buf[dev->keybdrem++] = APL_BS; buf[i] = 0x4d;}
++            else if (buf[i] == 0xd4) {dev->buf[dev->keybdrem++] = 0x2b; dev->buf[dev->keybdrem++] = APL_BS; buf[i] = 0x4c;}
++            else if (buf[i] == 0xd5) {dev->buf[dev->keybdrem++] = 0x42; dev->buf[dev->keybdrem++] = APL_BS; buf[i] = 0x4e;}
++            else if (buf[i] == 0xd6) {dev->buf[dev->keybdrem++] = 0x4f; dev->buf[dev->keybdrem++] = APL_BS; buf[i] = 0x50;}
++            else if (buf[i] == 0xd7) {dev->buf[dev->keybdrem++] = 0x29; dev->buf[dev->keybdrem++] = APL_BS; buf[i] = 0x54;}
++            else if (buf[i] == 0xd8) {dev->buf[dev->keybdrem++] = 0x28; dev->buf[dev->keybdrem++] = APL_BS; buf[i] = 0x54;}
++            else if (buf[i] == 0xd9) {dev->buf[dev->keybdrem++] = 0x47; dev->buf[dev->keybdrem++] = APL_BS; buf[i] = 0x54;}
++            else if (buf[i] == 0xda) {dev->buf[dev->keybdrem++] = 0x4b; dev->buf[dev->keybdrem++] = APL_BS; buf[i] = 0x4c;}
++            else if (buf[i] == 0xdb) {dev->buf[dev->keybdrem++] = 0x43; dev->buf[dev->keybdrem++] = APL_BS; buf[i] = 0x4a;}
++            else if (buf[i] == 0xdc) {dev->buf[dev->keybdrem++] = 0x4d; dev->buf[dev->keybdrem++] = APL_BS; buf[i] = 0x4f;}
++            else if (buf[i] == 0xdd) {dev->buf[dev->keybdrem++] = 0x2e; dev->buf[dev->keybdrem++] = APL_BS; buf[i] = 0x4b;}
++            else if (buf[i] == 0xde) {dev->buf[dev->keybdrem++] = 0x3f; dev->buf[dev->keybdrem++] = APL_BS; buf[i] = 0x4f;}
++            else if (buf[i] == 0xdf) {dev->buf[dev->keybdrem++] = 0x48; dev->buf[dev->keybdrem++] = APL_BS; buf[i] = 0x4d;}
++            else if (buf[i] >= 0xb3 && buf[i] <= 0xcc) 
++                            {dev->buf[dev->keybdrem++] = buf[i] - 0x52; dev->buf[dev->keybdrem++] = APL_BS; buf[i] = 0x46;}
++            else c = 0x00;
++            if (c == 0x01)
++            {
++                dev->buf[BUFLEN_1052 + dev->posapl] = dev->buf[dev->keybdrem-2];
++                dev->aplin3rd                       = APL_BS;
++            }
++        }
++
+         /* Copy character to keyboard buffer */
+         dev->buf[dev->keybdrem++] = buf[i];
+ 
+@@ -1160,6 +1313,182 @@
+             return (CSW_ATTN | CSW_UC);
+         }
+ 
++        /* Remember last three characters displayed at APL terminal */
++        /* Note: aplin1st may become an overstrike                  */
++        if (strcasecmp(dev->filename, "apl") == 0)
++        {
++            dev->aplin1st = dev->buf[BUFLEN_1052 + dev->posapl];
++            dev->aplin2nd = dev->aplin3rd;
++            dev->aplin3rd = buf[i];
++
++        /* Beautify APL\360 overstrikes and 1052-7 specific pseudo backspace and
++           linefeed keys if user is keying in, i.e. if one character arrives at a time */
++            c = 0x00;
++            apl_over1 = 0x00;
++            apl_over2 = 0x00;
++            if ((dev->aplin2nd == APL_BS || dev->aplin2nd == TRM_BS || dev->posapl < dev->posmaxapl) &&
++                 dev->buf[dev->keybdrem - 1] != '\r' && dev->buf[dev->keybdrem - 1] != '\n')
++            {
++                if (dev->aplin1st < dev->aplin3rd)
++                {
++                    apl_low  = dev->aplin1st;
++                    apl_high = dev->aplin3rd;
++                }
++                else
++                {
++                    apl_low  = dev->aplin3rd;
++                    apl_high = dev->aplin1st;
++                }
++                if (apl_high >= 0xb3 && apl_high <= 0xcc)      /* previous char was underscored capital */
++                {                                              /* decompose to support pseudos          */
++                    apl_over1 = 0x46;
++                    apl_over2 = apl_high - 0x52;
++                }
++                else if (apl_high >= 0xcd && apl_high <= 0xdf) /* previous char was overstrike          */
++                {                                              /* decompose to support pseudos          */
++                    if      (apl_high == 0xcd) {apl_over1 = 0x46; apl_over2 = 0x48;}
++                    else if (apl_high == 0xd0) {apl_over1 = 0x3f; apl_over2 = 0x5f;}
++                    else if (apl_high == 0xd1) {apl_over1 = 0x4f; apl_over2 = 0x5f;}
++                    else if (apl_high == 0xd2) {apl_over1 = 0x2f; apl_over2 = 0x5f;}
++                    else if (apl_high == 0xd3) {apl_over1 = 0x47; apl_over2 = 0x4d;}
++                    else if (apl_high == 0xd4) {apl_over1 = 0x2b; apl_over2 = 0x4c;}
++                    else if (apl_high == 0xd5) {apl_over1 = 0x42; apl_over2 = 0x4e;}
++                    else if (apl_high == 0xd6) {apl_over1 = 0x4f; apl_over2 = 0x50;}
++                    else if (apl_high == 0xd7) {apl_over1 = 0x29; apl_over2 = 0x54;}
++                    else if (apl_high == 0xd8) {apl_over1 = 0x28; apl_over2 = 0x54;}
++                    else if (apl_high == 0xd9) {apl_over1 = 0x47; apl_over2 = 0x54;}
++                    else if (apl_high == 0xda) {apl_over1 = 0x4b; apl_over2 = 0x4c;}
++                    else if (apl_high == 0xdb) {apl_over1 = 0x43; apl_over2 = 0x4a;}
++                    else if (apl_high == 0xdc) {apl_over1 = 0x4d; apl_over2 = 0x4f;}
++                    else if (apl_high == 0xdd) {apl_over1 = 0x2e; apl_over2 = 0x4b;}
++                    else if (apl_high == 0xde) {apl_over1 = 0x3f; apl_over2 = 0x4f;}
++                    else if (apl_high == 0xdf) {apl_over1 = 0x48; apl_over2 = 0x4d;}
++                }
++                /********************************************************/
++                /* Legitimate overstrikes                               */
++                /********************************************************/
++                if      (apl_low == 0x46 && apl_high == 0x48)    c = 0xcd;  /* delta underscore */
++                else if (apl_low == 0x6f && apl_high == 0x75)    c = 0xce;  /* O-U              */
++                else if (apl_low == 0x74 && apl_high == 0xce)    c = 0xcf;  /* O-U-T            */
++                else if (apl_low == 0x3f && apl_high == 0x5f)    c = 0xd0;  /* backslash hyphen */
++                else if (apl_low == 0x4f && apl_high == 0x5f)    c = 0xd1;  /* circle hyphen    */
++                else if (apl_low == 0x2f && apl_high == 0x5f)    c = 0xd2;  /* slash hyphen     */
++                else if (apl_low == 0x47 && apl_high == 0x4d)    c = 0xd3;  /* downgrade        */
++                else if (apl_low == 0x2b && apl_high == 0x4c)    c = 0xd4;  /* domino           */
++                else if (apl_low == 0x42 && apl_high == 0x4e)    c = 0xd5;  /* I-Beam           */
++                else if (apl_low == 0x4f && apl_high == 0x50)    c = 0xd6;  /* logarithm        */
++                else if (apl_low == 0x29 && apl_high == 0x54)    c = 0xd7;  /* nand             */
++                else if (apl_low == 0x28 && apl_high == 0x54)    c = 0xd8;  /* nor              */
++                else if (apl_low == 0x47 && apl_high == 0x54)    c = 0xd9;  /* nabla tilde      */
++                else if (apl_low == 0x4b && apl_high == 0x4c)    c = 0xda;  /* quad quote       */
++                else if (apl_low == 0x43 && apl_high == 0x4a)    c = 0xdb;  /* lamp comment     */
++                else if (apl_low == 0x4d && apl_high == 0x4f)    c = 0xdc;  /* reversal         */
++                else if (apl_low == 0x2e && apl_high == 0x4b)    c = 0xdd;  /* shriek           */
++                else if (apl_low == 0x3f && apl_high == 0x4f)    c = 0xde;  /* transpose        */
++                else if (apl_low == 0x48 && apl_high == 0x4d)    c = 0xdf;  /* upgrade          */
++                else if (apl_low == 0x20 || apl_high == apl_low) c = apl_high; /* blank or same */
++                else if (apl_low == 0x46 && apl_high >= 0x61                /* underscores      */
++                                         && apl_high <= 0x7a)    c = apl_high + 0x52;
++                /********************************************************/
++                /* Pseudo-legitimate overstrikes                        */
++                /********************************************************/
++                else if (apl_low == 0x2c && apl_high == 0x2e)    c = 0x2c;  /* comma over period         --> comma         */
++                else if (apl_low == 0x2e && apl_high == 0x3c)    c = 0x3c;  /* semicolon over period     --> semicolon     */
++                else if (apl_low == 0x2c && apl_high == 0x3e)    c = 0x3c;  /* colon over comma          --> semicolon     */
++                else if (apl_low == 0x3c && apl_high == 0x3e)    c = 0x3c;  /* semicolon over colon      --> semicolon     */
++                else if (apl_low == 0x2c && apl_high == 0x3c)    c = 0x3c;  /* semicolon over comma      --> semicolon     */
++                else if (apl_low == 0x2e && apl_high == 0x3e)    c = 0x3e;  /* colon over period         --> colon         */
++                else if (apl_low == 0x2d && apl_high == 0x5f)    c = 0x2d;  /* plus over minus           --> plus          */
++                else if (apl_low == 0x2b && apl_high == 0x5f)    c = 0x2b;  /* divide over minus         --> divide        */
++                else if (apl_low == 0x5f && apl_high == 0xd4)    c = 0xd4;  /* domino over minus         --> domino        */
++                else if (apl_low == 0x25 && apl_high == 0x2a)    c = 0x2a;  /* not equal over equal      --> not equal     */
++                else if (apl_low == 0x25 && apl_high == 0x2f)    c = 0x2a;  /* equal over slash          --> not equal     */
++                else if (apl_low == 0x66 && apl_high == 0x6c)    c = 0x65;  /* L over F                  --> E             */
++                else if (apl_low == 0x65 && apl_high == 0x66)    c = 0x65;  /* F over E                  --> E             */
++                else if (apl_low == 0x6f && apl_high == 0x71)    c = 0x71;  /* O over Q                  --> Q             */
++                else if (apl_low == 0x65 && apl_high == 0x6c)    c = 0x65;  /* L over E                  --> E             */
++                else if (apl_low == 0x70 && apl_high == 0x72)    c = 0x72;  /* P over R                  --> R             */
++                else if (apl_low == 0x69 && apl_high == 0x74)    c = 0x74;  /* I over T                  --> T             */
++                else if (apl_low == 0x44 && apl_high == 0x53)    c = 0x3b;  /* max over min              --> lbracket      */
++                else if (apl_low == 0x3e && apl_high == 0x4b)    c = 0xdd;  /* quote over colon          --> shriek        */
++                else if (apl_low == 0x2e && apl_high == 0x51)    c = 0x51;  /* period over question mark --> question mark */
++                else if (apl_low == 0x5b && apl_high == 0x5f)    c = 0x5b;  /* minus over larrow         --> larrow        */
++                else if (apl_low == 0x5f && apl_high == 0x7b)    c = 0x7b;  /* minus over rarrow         --> rarrow        */
++                else if (apl_low == 0x33 && apl_high == 0x38)    c = 0x38;  /* 3 over 8                  --> 8             */
++                else if (apl_low == apl_over1 || apl_low == apl_over2) c = apl_high; /* overstrike overstruck by component */
++                /********************************************************/
++                /* CHARACTER ERROR (now hopefully in sync with APL\360) */
++                /********************************************************/
++                else c = TRM_CHERR;
++            }
++            /********************************************************/
++            /* Line editing and housekeeping                        */
++            /********************************************************/
++            if      (buf[i] == APL_BS) c = TRM_BS; /* user pressed 1052 pseudo backspace (Shift-Z) key */
++            else if (buf[i] == TRM_BS) c = TRM_BS; /* user pressed real backspace key                  */
++            else if (buf[i] == APL_NL) c = TRM_NL; /* user pressed 1052 pseudo newline (Shift-X) key   */
++            else if (c == 0x00)                    /* no line edit, no overstrike, just next character */
++            {
++                dev->buf[BUFLEN_1052 + dev->posapl++] = buf[i]; /* update shadow buffer                    */
++                dev->posmaxapl = dev->posapl;                   /* adjust maximum character position index */
++                dev->buf[BUFLEN_1052 + dev->posapl] = 0x20;     /* and start with white paper              */
++                continue;                                       /* process next input character            */
++            }
++            /********************************************************/
++            /* Real backspace                                       */
++            /********************************************************/
++            if (buf[i]  == TRM_BS)
++            {
++                if ((dev->posapl - 1) < dev->posminapl) apl_cursor[0] = 0x20; /* left of previous newline must be white  */
++                else apl_cursor[0] = dev->buf[BUFLEN_1052 + dev->posapl - 1]; /* else get whatever backspace destroyed   */
++                apl_cursor[1] = TRM_BS;                                       /* restore cursor position                 */
++                if (num == 1) send_packet (dev->fd, apl_cursor, 2, NULL);     /* update terminal if not mass input       */
++                dev->buf[dev->keybdrem - 1] = APL_BS;                         /* send backspace to APL                   */
++            }
++            /********************************************************/
++            /* Pseudo backspace and newline common processing       */
++            /********************************************************/
++            else
++            {
++                apl_cursor[0] = TRM_BS;                                       /* position cursor                         */
++                apl_cursor[1] = dev->buf[BUFLEN_1052 + dev->posapl];          /* restore what the pseudo char destroyed  */
++                apl_cursor[2] = TRM_BS;                                       /* position cursor                         */
++                apl_cursor[3] = c;                                            /* backspace or newline as desired         */
++                if (num == 1) send_packet (dev->fd, apl_cursor, 4, NULL);     /* update terminal if not mass input       */
++            }
++            /********************************************************/
++            /* Pseudo backspace                                     */
++            /********************************************************/
++            if (c == TRM_BS)
++            {
++                dev->posapl--;                                                /* adjust shadow buffer position           */
++                if (dev->posapl < dev->posminapl)                             /* left of previous newline?               */
++                {
++                    dev->posminapl = dev->posapl;                             /* adjust minimum character position index */
++                    dev->buf[BUFLEN_1052 + dev->posapl]     = 0x20;           /* and start with white paper              */
++                }
++            }
++            /********************************************************/
++            /* Pseudo newline                                       */
++            /********************************************************/
++            else if (c == TRM_NL)
++            {
++                dev->posminapl = dev->posapl;                                 /* new line new luck: reinitialize minimum */
++                dev->posmaxapl = dev->posapl;                                 /* and maximum character position index    */
++                dev->buf[BUFLEN_1052 + dev->posapl] = 0x20;                   /* start with white paper                  */
++                select_ribbon(dev->fd, BLACK);                                /* switch to black                         */
++                apl_cursor[0] = 0x28;                                         /* newline indicator (APL "or" symbol)     */
++                apl_cursor[1] = TRM_BS;                                       /* correct horizontal cursor position      */
++                apl_cursor[2] = TRM_NL;                                       /* correct vertical cursor position        */
++                if (num == 1) send_packet (dev->fd, apl_cursor, 3, NULL);     /* update terminal if not mass input       */
++                select_ribbon(dev->fd, RED);                                  /* switch back to red                      */
++            }
++            /********************************************************/
++            /* Overstrike or CHARACTER ERROR                        */
++            /********************************************************/
++            else dev->buf[BUFLEN_1052 + dev->posapl++] = c;                   /* update shadow buffer                    */
++        }
++
+     } /* end for(i) */
+ 
+     /* Return zero status if CRLF was not yet received */
+@@ -1173,14 +1502,15 @@
+             dev->keybdrem);
+     packet_trace (dev->buf, dev->keybdrem);
+ 
+-    /* Strip off the CRLF sequence */
+-    dev->keybdrem -= 2;
++    /* Strip off the CRLF sequence if not an APL terminal */
++    if (strcasecmp(dev->filename, "apl") != 0) dev->keybdrem -= 2;
+ 
+     /* Translate the keyboard buffer to EBCDIC */
+     for (i = 0; i < dev->keybdrem; i++)
+     {
+         c = dev->buf[i];
+-        dev->buf[i] = (isprint(c) ? host_to_guest(c) : SPACE);
++        if (strcasecmp(dev->filename, "apl") == 0) dev->buf[i] = terminal_to_apl[c];                      /* APL characterset     */
++                                              else dev->buf[i] = (isprint(c) ? host_to_guest(c) : SPACE); /* regular characterset */
+     } /* end for(i) */
+ 
+     /* Trace the EBCDIC input data */
+@@ -1467,6 +1797,7 @@
+ connect_client (int *csockp)
+ {
+ int                     rc;             /* Return code               */
++int                     i;              /* Loop counter for APL term */
+ DEVBLK                 *dev;            /* -> Device block           */
+ size_t                  len;            /* Data length               */
+ int                     csock;          /* Socket for conversation   */
+@@ -1755,12 +2086,16 @@
+     {
+         len = MSGBUF( buf, "%s\r\n%s\r\n%s\r\n",
+                         conmsg, hostmsg, devmsg);
++        /* if APL terminal translate as far as possible to APL character set */
++        if (strcasecmp(dev->filename, "apl") == 0) for (i = 0; i < (int) len; i++) buf[i] = host_to_terminal[(BYTE) buf[i]];
+         logoout=buf;
+     }
+ 
+     if (devclass != 'P')  /* do not write connection resp on 3287 */
+     {
++        if (strcasecmp(dev->filename, "apl") == 0) select_ribbon(dev->fd, BLACK);   /* switch to black on APL terminal */
+         rc = send_packet (csock, (BYTE *)logoout, (int)len, "CONNECTION RESPONSE");
++        if (strcasecmp(dev->filename, "apl") == 0) select_ribbon(dev->fd, RED);     /* switch to red on APL terminal   */
+     }
+     if(logobfr)
+     {
+@@ -1772,12 +2107,14 @@
+          (1) this is NOT a 3287 printer device, -AND-
+          (2) this is NOT the System-370 mode initial power-on state
+          and it is not the SYSG console
++         (4) and this is not an APL terminal
+     */
+     if (devclass != 'P'
+   #if defined(_FEATURE_INTEGRATED_3270_CONSOLE)
+         && dev != sysblk.sysgdev
+   #endif /*defined(_FEATURE_INTEGRATED_3270_CONSOLE)*/
+-        && !INITIAL_POWERON_370())
++        && !INITIAL_POWERON_370()
++        && strcasecmp(dev->filename, "apl") != 0)
+         device_attention (dev, CSW_DE);
+ 
+     /* Try to detect dropped connections */
+@@ -2667,8 +3004,23 @@
+             ;   // NOP (not really a group name; an '*' is
+                 // simply used as an argument place holder)
+         else
++        {
+             strlcpy(dev->filename,argv[ac],sizeof(dev->filename));
+ 
++            /* initialize APL specific parameters */
++            if (strcasecmp(dev->filename, "apl") == 0)
++            {
++                dev->bufsize    = 2 * BUFLEN_1052;  /* double buffer size to accomodate shadow buffer */
++                dev->aplin1st   = 0x00;
++                dev->aplin2nd   = 0x00;
++                dev->aplout1st  = 0x00;
++                dev->aplout2nd  = 0x00;
++                dev->posapl     = BUFLEN_1052 / 3;  /* one third of shadow to the left and two thirds to the right */
++                dev->posmaxapl  = dev->posapl;
++                dev->posminapl  = dev->posapl;
++            }
++        }
++
+         argc--; ac++;
+         if (argc > 0)   // ip address?
+         {
+@@ -3428,11 +3780,15 @@
+     UNREFERENCED(ccwseq);
+ 
+     /* Unit check with intervention required if no client connected */
++    /* and not an APL terminal                                      */
+     if (dev->connected == 0 && !IS_CCW_SENSE(code))
+     {
+-        dev->sense[0] = SENSE_IR;
+-        *unitstat = CSW_UC;
+-        return;
++        if (strcasecmp(dev->filename, "apl") != 0 || code != 0x0A)
++        {
++            dev->sense[0] = SENSE_IR;
++            *unitstat = CSW_UC;
++            return;
++        }
+     }
+ 
+     /* Process depending on CCW opcode */
+@@ -3452,11 +3808,64 @@
+         num = (count < BUFLEN_1052) ? count : BUFLEN_1052;
+         *residual = count - num;
+ 
++        /* glitch to detect APL end of line sequence */
++        if (strcasecmp(dev->filename, "apl") == 0)
++        {
++            if       (num == 1 && iobuf[0] == 0)  iobuf[0] = APL_LF;
++            else if  (iobuf[num-1] == APL_CR) iobuf[num-1] = TRM_CR;
++            else if  (iobuf[num-2] == APL_CR)
++            {
++                iobuf[num-2] = TRM_CR;
++                iobuf[num-1] = APL_LF;
++            }
++        }
++
+         /* Translate data in channel buffer to ASCII */
+         for (len = 0; len < num; len++)
+         {
+-            c = guest_to_host(iobuf[len]);
+-            if (!isprint(c) && c != 0x0a && c != 0x0d) c = SPACE;
++
++            /* If APL terminal check for overstrikes first */
++            if (strcasecmp(dev->filename, "apl") == 0)
++            {
++                /* Remember last three characters printed */
++                dev->aplout1st = dev->aplout2nd;
++                dev->aplout2nd = dev->aplout3rd;
++                dev->aplout3rd = iobuf[len];
++                if (dev->aplout2nd == 0xe9)           /* pseudo backspace indicates we're printing an overstrike */
++                {
++                    if      (dev->aplout1st == 0xc8 && dev->aplout3rd == 0xc6)     c = 0xcd;  /* delta underscore */
++                    else if (dev->aplout1st == 0x6d && dev->aplout3rd == 0x6e)     c = 0xd0;  /* backslash hyphen */
++                    else if (dev->aplout1st == 0xd6 && dev->aplout3rd == 0x6e)     c = 0xd1;  /* circle hyphen    */
++                    else if (dev->aplout1st == 0x61 && dev->aplout3rd == 0x6e)     c = 0xd2;  /* slash hyphen     */
++                    else if (dev->aplout1st == 0xc7 && dev->aplout3rd == 0xd4)     c = 0xd3;  /* downgrade        */
++                    else if (dev->aplout1st == 0xd3 && dev->aplout3rd == 0x6c)     c = 0xd4;  /* domino           */
++                    else if (dev->aplout1st == 0xc2 && dev->aplout3rd == 0xd5)     c = 0xd5;  /* I-Beam           */
++                    else if (dev->aplout1st == 0xd6 && dev->aplout3rd == 0xd7)     c = 0xd6;  /* logarithm        */
++                    else if (dev->aplout1st == 0x4f && dev->aplout3rd == 0xe3)     c = 0xd7;  /* nand             */
++                    else if (dev->aplout1st == 0x7f && dev->aplout3rd == 0xe3)     c = 0xd8;  /* nor              */
++                    else if (dev->aplout1st == 0xc7 && dev->aplout3rd == 0xe3)     c = 0xd9;  /* nabla tilde      */
++                    else if (dev->aplout1st == 0xd3 && dev->aplout3rd == 0xd2)     c = 0xda;  /* quad quote       */
++                    else if (dev->aplout1st == 0xc3 && dev->aplout3rd == 0xd1)     c = 0xdb;  /* lamp comment     */
++                    else if (dev->aplout1st == 0xd6 && dev->aplout3rd == 0xd4)     c = 0xdc;  /* reversal         */
++                    else if (dev->aplout1st == 0xd2 && dev->aplout3rd == 0x4b)     c = 0xdd;  /* shriek           */
++                    else if (dev->aplout1st == 0x6d && dev->aplout3rd == 0xd6)     c = 0xde;  /* transpose        */
++                    else if (dev->aplout1st == 0xc8 && dev->aplout3rd == 0xd4)     c = 0xdf;  /* upgrade          */
++                    else if (dev->aplout3rd == 0xc6)                                          /* underscores      */
++                    {
++                        if      (dev->aplout1st >= 0x81 && dev->aplout1st <= 0x89) c = dev->aplout1st + 0x32;
++                        else if (dev->aplout1st >= 0x91 && dev->aplout1st <= 0x99) c = dev->aplout1st + 0x2b;
++                        else if (dev->aplout1st >= 0xa2 && dev->aplout1st <= 0xa9) c = dev->aplout1st + 0x23;
++                        else c = apl_to_terminal[iobuf[len]];
++                    }
++                    else c = apl_to_terminal[iobuf[len]]; /* shouldn't occur, on output all overstrikes are defined */
++                }
++                else c = apl_to_terminal[iobuf[len]];     /* no overstrike, just translate */
++            }
++            else
++            {
++                c = guest_to_host(iobuf[len]);
++                if (!isprint(c) && c != 0x0a && c != 0x0d) c = SPACE;
++            }
+             iobuf[len] = c;
+         } /* end for(len) */
+ 
+@@ -3477,7 +3886,24 @@
+         } /* end if(!data-chaining) */
+ 
+         /* Send the data to the client */
++
++        if (strcasecmp(dev->filename, "apl") == 0) select_ribbon(dev->fd, BLACK); /* switch to black on APL terminal */
++
+         rc = send_packet (dev->fd, iobuf, len, NULL);
++
++        /* Switch to red, then reinitialize input shadowing      */
++        /* overstrike detection and line editing on APL terminal */
++        if (strcasecmp(dev->filename, "apl") == 0) 
++        {
++            select_ribbon(dev->fd, RED);
++            dev->aplin1st  = 0x00;
++            dev->aplin2nd  = 0x00;
++            dev->posapl    = BUFLEN_1052 / 3;
++            dev->posmaxapl = dev->posapl;
++            dev->posminapl = dev->posapl;
++            dev->buf[BUFLEN_1052 + dev->posapl] = 0x20;
++        }
++
+         if (rc < 0)
+         {
+             dev->sense[0] = SENSE_EC;
+@@ -3535,17 +3961,29 @@
+             /* Exit if error status */
+             if (stat != CSW_ATTN)
+             {
+-                *unitstat = (CSW_CE | CSW_DE) | (stat & ~CSW_ATTN);
++                if (strcasecmp(dev->filename, "apl") != 0) /* let attention pass on APL terminal */
++                     *unitstat = (CSW_CE | CSW_DE) | (stat & ~CSW_ATTN);
++                else *unitstat =  CSW_CE | CSW_DE  |  stat;
+                 break;
+             }
+ 
+         }
+ 
+         /* Calculate number of bytes to move and residual byte count */
++
++        /* APL doesn't like an exact fit of the buffer size, so we append an EOB in this case */
++        if (dev->keybdrem == count && strcasecmp(dev->filename, "apl") == 0) dev->buf[dev->keybdrem++] = APL_EOB;
++
+         len = dev->keybdrem;
++
+         num = (count < len) ? count : len;
+         *residual = count - num;
+-        if (count < len) *more = 1;
++
++        if (count < len)
++        {
++            if (strcasecmp(dev->filename, "apl") == 0) usleep(200); /* don't overrun APL */
++            *more = 1;
++        }
+ 
+         /* Copy data from device buffer to channel buffer */
+         memcpy (iobuf, dev->buf, num);
+@@ -3559,6 +3997,13 @@
+         else
+         {
+             dev->keybdrem = 0;
++
++            /* On APL terminal reinitialize output overstrike detection */
++            if (strcasecmp(dev->filename, "apl") == 0)
++            {
++                dev->aplout1st = 0x00;
++                dev->aplout2nd = 0x00;
++            }
+         }
+ 
+         /* Return normal status */
+diff -Naur a/hstructs.h b/hstructs.h
+--- a/hstructs.h	2012-11-30 11:13:08.000000000 +0100
++++ b/hstructs.h	2012-12-08 11:55:59.000000000 +0100
+@@ -1176,6 +1176,10 @@
+         in_addr_t  acc_ipmask;          /* Allowable clients IP mask */
+         U32     rlen3270;               /* Length of data in buffer  */
+         int     pos3270;                /* Current screen position   */
++        int     posapl;                 /* APL: index of char 
++                                           at cursor position        */
++        int     posmaxapl;              /* APL: max index seen so far*/
++        int     posminapl;              /* APL: min index seen so far*/
+         int     keybdrem;               /* Number of bytes remaining
+                                            in keyboard read buffer   */
+         u_int   eab3270:1;              /* 1=Extended attributes     */
+@@ -1183,6 +1187,12 @@
+         u_int   prompt1052:1;           /* 1=Prompt for linemode i/p */
+         BYTE    aid3270;                /* Current input AID value   */
+         BYTE    mod3270;                /* 3270 model number         */
++        BYTE    aplin1st;               /* APL: 1st overstrike input */
++        BYTE    aplin2nd;               /* APL: 2nd overstrike input */
++        BYTE    aplin3rd;               /* APL: 3rd overstrike input */
++        BYTE    aplout1st;              /* APL: 1st overstrike output*/
++        BYTE    aplout2nd;              /* APL: 2nd overstrike output*/
++        BYTE    aplout3rd;              /* APL: 3rd overstrike output*/
+ 
+         /*  Device dependent fields for cardrdr                      */
+ 

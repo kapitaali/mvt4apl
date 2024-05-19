@@ -1,0 +1,31 @@
+#**********************************************************************
+#***                                                                ***
+#*** Script:  aplinst1                                              ***
+#***                                                                ***
+#*** Purpose: Kick off APL\360 installation.                        ***
+#***                                                                ***
+#*** Updated: 2013/03/23                                            ***
+#***                                                                ***
+#**********************************************************************
+hao tgt IEF404I APLINST
+hao cmd script aplinst/release_aplsrc
+hao tgt IEF404I APLSRC
+hao cmd script aplinst/release_makelink
+hao tgt IEF404I MAKELINK
+hao cmd script aplinst/shutdown
+pause 1
+/mn sess,t
+pause 1
+/mn sess,t
+pause 1
+/mn jobnames,t
+pause 1
+/mn jobnames,t
+pause 1
+/$prdr1
+pause 1
+/v 00c,online
+pause 1
+devinit 00c source/APL360_source_code.txt
+pause 1
+/s aplinst

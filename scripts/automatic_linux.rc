@@ -1,0 +1,32 @@
+#**********************************************************************
+#***                                                                ***
+#*** Script:  automatic_linux.rc                                    ***
+#***                                                                ***
+#*** Purpose: OS/360-MVT IPL with APL\360 initialization and        ***
+#***          PuTTY telnet session startup on Linux.                ***
+#***                                                                ***
+#*** Updated: 2013/03/23                                            ***
+#***                                                                ***
+#**********************************************************************
+hao tgt IEE101A
+hao cmd script scripts/jobnames
+hao tgt IKJ019I
+hao cmd script scripts/sess
+hao tgt IEE334I
+hao cmd script scripts/poweroff
+hao tgt APL     APL HAS
+hao cmd script scripts/client_linux
+#
+# don't hurry
+#
+pause 5
+#
+# IPL MVTRES and kick off OS/360-MVT
+#
+ipl 350
+pause 4
+/
+pause 4
+/r 00,u
+pause 2
+/r 00,u

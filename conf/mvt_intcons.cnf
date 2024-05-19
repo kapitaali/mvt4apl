@@ -1,0 +1,95 @@
+#
+# Hercules Configuration for OS/360-MVT with APL\360
+# Consoles: Integrated 3215-C at 009
+#
+CPUSERIAL 000611
+CPUMODEL  0158
+MAINSIZE  16
+XPNDSIZE  0
+CNSLPORT  3600
+HTTP PORT 8360
+HTTP ROOT hercules/httproot
+HTTP START
+NUMCPU    1
+LOADPARM  ........
+SYSEPOCH  1960 -28
+TZOFFSET  +0200
+ARCHMODE  S/370
+OSTAILOR  QUIET
+# .-----------------------------Device number
+# |     .-----------------------Device type
+# |     |       .---------------File name
+# |     |       |
+# V     V       V
+#---    ----    --------------------
+0009    3215-C
+000C	2501    * eof
+0280    3420    *
+0350    3330    dasd/mvtres.350
+000D	3525	pch/pch00d.txt ascii
+000E	1403	prt/STC_and_TSO_output.txt
+001E	1403	log/mvtlog.txt
+0020	3211	prt/JOB_output.txt
+0151	3330	dasd/work01.151
+0152    3330    dasd/herc01.152
+0153    3330    dasd/spool1.153
+0351    3330    dasd/dlib01.351
+0352	3330	dasd/work02.352
+0530	2314	dasd/apl001.530
+0531	2314	dasd/apl002.531
+0532	2314	dasd/apl003.532
+0533	2314	dasd/apl004.533
+0534	2314	dasd/apl005.534
+0535	2314	dasd/apl006.535
+0536	2314	dasd/apl007.536
+0537	2314	dasd/apl008.537
+00C0    3270
+00C1    3270
+00C2    3270
+00C3    3270
+00C4    3270
+00C5    3270
+00C6    3270
+00C7    3270
+#
+# 2741 terminals with extended APL support using rxvt4apl
+#
+0400 2703 dial=in lport=57411 lnctl=ibm1 term=rxvt4apl skip=5EDE code=ebcd iskip=0D0A prepend=16 append=5B1F eol=0A binary=yes crlf=yes sendcr=yes
+0401 2703 dial=in lport=57412 lnctl=ibm1 term=rxvt4apl skip=5EDE code=ebcd iskip=0D0A prepend=16 append=5B1F eol=0A binary=yes crlf=yes sendcr=yes
+0402 2703 dial=in lport=57413 lnctl=ibm1 term=rxvt4apl skip=5EDE code=ebcd iskip=0D0A prepend=16 append=5B1F eol=0A binary=yes crlf=yes sendcr=yes
+0403 2703 dial=in lport=57414 lnctl=ibm1 term=rxvt4apl skip=5EDE code=ebcd iskip=0D0A prepend=16 append=5B1F eol=0A binary=yes crlf=yes sendcr=yes
+#
+# TTY terminals (3335, TWX)
+#
+0420 2703 dial=in lport=53351 lnctl=tele2 uctrans=yes term=tty skip=88C9DF
+0421 2703 dial=in lport=53352 lnctl=tele2 uctrans=yes term=tty skip=88C9DF
+0422 2703 dial=in lport=53353 lnctl=tele2 uctrans=yes term=tty skip=88C9DF iskip=0A
+0423 2703 dial=in lport=53354 lnctl=tele2 uctrans=yes term=tty skip=88C9DF iskip=0A bs=dumb break=dumb
+#
+# local 1052 terminals with extended APL support using HyperTerminal or PuTTY
+#
+0440    1052 NOPROMPT APL
+0441    1052 NOPROMPT APL
+0442    1052 NOPROMPT APL
+0443    1052 NOPROMPT APL
+#
+# 2741 terminals with extended APL support using rxvt4apl
+#
+0480 2703 dial=in lport=57421 lnctl=ibm1 term=rxvt4apl skip=5EDE code=ebcd iskip=0D0A prepend=16 append=5B1F eol=0A binary=yes crlf=yes sendcr=yes
+0481 2703 dial=in lport=57422 lnctl=ibm1 term=rxvt4apl skip=5EDE code=ebcd iskip=0D0A prepend=16 append=5B1F eol=0A binary=yes crlf=yes sendcr=yes
+0482 2703 dial=in lport=57423 lnctl=ibm1 term=rxvt4apl skip=5EDE code=ebcd iskip=0D0A prepend=16 append=5B1F eol=0A binary=yes crlf=yes sendcr=yes
+0483 2703 dial=in lport=57424 lnctl=ibm1 term=rxvt4apl skip=5EDE code=ebcd iskip=0D0A prepend=16 append=5B1F eol=0A binary=yes crlf=yes sendcr=yes
+#
+# TTY terminals (3335, TWX)
+#
+04A0 2703 dial=in lport=53361 lnctl=tele2 uctrans=yes term=tty skip=88C9DF
+04A1 2703 dial=in lport=53362 lnctl=tele2 uctrans=yes term=tty skip=88C9DF
+04A2 2703 dial=in lport=53363 lnctl=tele2 uctrans=yes term=tty skip=88C9DF iskip=0A
+04A3 2703 dial=in lport=53364 lnctl=tele2 uctrans=yes term=tty skip=88C9DF iskip=0A bs=dumb break=dumb
+#
+# local 1052 terminals with extended APL support using HyperTerminal or PuTTY
+#
+04C0    1052 NOPROMPT APL
+04C1    1052 NOPROMPT APL
+04C2    1052 NOPROMPT APL
+04C3    1052 NOPROMPT APL

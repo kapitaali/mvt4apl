@@ -1,0 +1,21 @@
+#!/bin/bash
+#**********************************************************************
+#***                                                                ***
+#*** Script:  start_herc                                            ***
+#***                                                                ***
+#*** Purpose: Hercules startup for OS/360-MVT with                  ***
+#***          external console definitions.                         ***
+#***                                                                ***
+#*** Updated: 2013/03/23                                            ***
+#***                                                                ***
+#**********************************************************************
+#
+# set environment
+#
+if [[ `uname -m` == 'x86_64' ]];then arch=64;else arch=32;fi
+export PATH=hercules/linux/$arch/bin:$PATH
+export LD_LIBRARY_PATH=hercules/linux/$arch/lib:hercules/linux/$arch/lib/hercules:$LD_LIBRARY_PATH
+#
+# start Hercules
+#
+hercules -f conf/mvt_extcons.cnf

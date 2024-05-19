@@ -1,0 +1,23 @@
+#**********************************************************************
+#***                                                                ***
+#*** Script:  aplcreate                                             ***
+#***                                                                ***
+#*** Purpose: Kick off APL\360 library creation.                    ***
+#***                                                                ***
+#*** Updated: 2013/03/23                                            ***
+#***                                                                ***
+#**********************************************************************
+hao tgt IEF233A
+hao cmd script aplinst/mount_library_tape
+hao tgt IEF404I CREATE
+hao cmd script aplinst/shutdown
+pause 1
+/mn sess,t
+pause 1
+/mn sess,t
+pause 1
+/mn jobnames,t
+pause 1
+/mn jobnames,t
+pause 1
+/$a'create'

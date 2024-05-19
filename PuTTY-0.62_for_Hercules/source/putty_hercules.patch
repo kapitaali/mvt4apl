@@ -1,0 +1,22 @@
+--- a/ldisc.c	2010-09-09 16:32:25.000000000 +0200
++++ b/ldisc.c	2012-12-20 17:58:17.000000000 +0100
+@@ -307,6 +307,8 @@
+ 			ldisc->back->special(ldisc->backhandle, TS_EOL);
+ 		    else
+ 			ldisc->back->send(ldisc->backhandle, "\r", 1);
++		    if (ECHOING)
++			c_write(ldisc, "\r\n", 2);
+ 		    break;
+ 		  case CTRL('?'):
+ 		  case CTRL('H'):
+--- a/telnet.c	2008-11-24 18:51:42.000000000 +0100
++++ b/telnet.c	2012-12-20 17:58:17.000000000 +0100
+@@ -296,7 +296,7 @@
+ 	deactivate_option(telnet, o->option ==
+ 			  TELOPT_NEW_ENVIRON ? &o_oenv : &o_nenv);
+     }
+-    option_side_effects(telnet, o, 1);
++    if (o->option != TELOPT_TTYPE) option_side_effects(telnet, o, 1);
+ }
+ 
+ static void refused_option(Telnet telnet, const struct Opt *o)

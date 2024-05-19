@@ -1,0 +1,16 @@
+#**********************************************************************
+#***                                                                ***
+#*** Script:  client_windows                                        ***
+#***                                                                ***
+#*** Purpose: Start two PuTTY telnet sessions for use with          ***
+#***          APL\360 on Windows.                                   ***
+#***                                                                ***
+#*** Updated: 2013/03/23                                            ***
+#***                                                                ***
+#**********************************************************************
+pause 6
+script scripts/PuTTY_windows &
+pause 3
+script scripts/PuTTY_windows &
+pause 2
+script scripts/mvt4apl.logo

@@ -1,0 +1,25 @@
+#!/bin/bash
+#**********************************************************************
+#***                                                                ***
+#*** Script:  apl360                                                ***
+#***                                                                ***
+#*** Purpose: Run APL\360 on OS/360-MVT.                            ***
+#***                                                                ***
+#*** Updated: 2013/03/23                                            ***
+#***                                                                ***
+#**********************************************************************
+#
+# install APL\360 if necessary
+#
+if [ ! -f aplinst/status ]; then ./aplinst/install_apl360; fi
+if [ ! -f aplinst/status ]; then exit; fi
+#
+# set environment
+#
+if [[ `uname -m` == 'x86_64' ]];then arch=64;else arch=32;fi
+export PATH=hercules/linux/$arch/bin:$PATH
+export LD_LIBRARY_PATH=hercules/linux/$arch/lib:hercules/linux/$arch/lib/hercules:$LD_LIBRARY_PATH
+#
+# IPL OS/360-MVT and start APL\360
+#
+HERCULES_RC=scripts/automatic_linux.rc hercules -d -f conf/mvt_intcons.cnf

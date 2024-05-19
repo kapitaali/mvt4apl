@@ -1,0 +1,11 @@
+#**********************************************************************
+#***                                                                ***
+#*** Script:  PuTTY_windows                                         ***
+#***                                                                ***
+#*** Purpose: Start a PuTTY telnet session for use with             ***
+#***          APL\360 on Windows.                                   ***
+#***                                                                ***
+#*** Updated: 2013/03/23                                            ***
+#***                                                                ***
+#**********************************************************************
+sh PuTTY-0.62_for_Hercules\windows\putty -load APL360

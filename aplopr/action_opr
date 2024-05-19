@@ -1,0 +1,26 @@
+#!/bin/bash
+#***********************************************************************
+#***                                                                 ***
+#*** APL\360 Automated Operator                                      ***
+#*** --------------------------                                      ***
+#***                                                                 ***
+#***   The following automatic actions are implemented:              ***
+#***                                                                 ***
+#***    - Sign on user 314159 (the operator) after 5 seconds.        ***
+#***                                                                 ***
+#***    - Load OPFNS workspace after successful sign on.             ***
+#***                                                                 ***
+#***    - Set the current date 5 seconds after the operator sign on. ***
+#***                                                                 ***
+#***    - When user 2132 (PILATUS) signs on, privilege his terminal. ***
+#***                                                                 ***
+#***    - Spawn corr_date script to increment the date at midnight.  ***
+#***                                                                 ***
+#***   J. Winkelmann 2013/02/18                                      ***
+#***                                                                 ***
+#***********************************************************************
+echo $(ps -p $$ --no-headers -o sid) >sid
+sleep 2
+sed -u 's/      //' | tee -a /dev/stderr apl_360.log | sed -nu '/OPR)/ {c)load opfns
+}; / PILATUS 2132/ {s/\([^0-9]*\)\([0-9]*\).*/privilege \2/;p};' \
+| { { { cat <$1 2>/dev/null | tee -a apl_360.log; } & { tee -a /dev/stderr apl_360.log; } & { corr_date; } & { signon_opr; } }; wait; }

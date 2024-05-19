@@ -1,0 +1,30 @@
+#**********************************************************************
+#***                                                                ***
+#*** Script:  aplinst.rc                                            ***
+#***                                                                ***
+#*** Purpose: IPL OS/360-MVT and initialize                         ***
+#***          APL\360 library creation                              ***
+#***                                                                ***
+#*** Updated: 2013/03/23                                            ***
+#***                                                                ***
+#**********************************************************************
+hao tgt IEE101A
+hao cmd script scripts/jobnames
+hao tgt IKJ019I
+hao cmd script aplinst/aplcreate
+hao tgt IEE334I
+hao cmd script scripts/poweroff
+#
+# don't hurry
+#
+pause 5
+#
+# IPL MVTRES and kick off OS/360-MVT
+#
+ipl 350
+pause 4
+/
+pause 4
+/r 00,auto=ny
+pause 2
+/r 00,auto=ny

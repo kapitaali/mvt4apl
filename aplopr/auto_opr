@@ -1,0 +1,54 @@
+#!/bin/bash
+#***********************************************************************
+#***                                                                 ***
+#*** APL\360 Automated Operator                                      ***
+#*** --------------------------                                      ***
+#***                                                                 ***
+#***   Minimal automation of the APL\360 recording terminal:         ***
+#***                                                                 ***
+#***    - Designed to run on a Linux virtual console tty emulating   ***
+#***      an IBM 2741 terminal attached to APL\360.                  ***
+#***                                                                 ***
+#***    - All automatic actions are hardcoded in script action_opr.  ***
+#***                                                                 ***
+#***    - APL Commands can be entered at the terminal at any time.   ***
+#***      Note: The 2741 Attention key (CTRL-C) doesn't work and it  ***
+#***            isn't necessary to use it as opposed to a manual     ***
+#***            recording terminal session.                          ***
+#***                                                                 ***
+#***    - Upon drop of the terminal connection (usually after the    ***
+#***      operator signs off) it is restarted after 5 seconds unless ***
+#***      auto_opr is terminated by a hangup signal.                 ***
+#***                                                                 ***
+#***   Usage:                                                        ***
+#***                                                                 ***
+#***    Make sure that the scripts auto_opr, action_opr, signon_opr, ***
+#***    and corr_date are in the current path, then enter            ***
+#***                                                                 ***
+#***      auto_opr host port                                         ***
+#***                                                                 ***
+#***    where "host" is the hostname or IP address of the APL\360    ***
+#***    system and "port" is the port at which the emulated IBM 2741 ***
+#***    is listening.                                                ***
+#***                                                                 ***
+#***    The complete recording terminal session is appended to file  ***
+#***    apl_360.log in the current directory. This file can be       ***
+#***    followed (tail -f apl_360.log) to obtain a copy of the       ***
+#***    recording terminal traffic.                                  ***
+#***                                                                 ***
+#***   J. Winkelmann 2013/02/18                                      ***
+#***                                                                 ***
+#***********************************************************************
+setterm -foreground black -background white
+clear
+while [ 1 ]; do
+   trap '' 2
+   setsid ncat --sh-exec "action_opr `tty`" -Ct $1 $2
+   trap 2
+   sleep 1
+   kill -- -`cat sid` >/dev/null 2>&1
+   sleep 1
+   kill -9 -- -`cat sid` >/dev/null 2>&1
+   echo "Press CTRL-C _NOW_ to terminate auto_opr"
+   sleep 3
+done

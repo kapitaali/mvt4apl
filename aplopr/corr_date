@@ -1,0 +1,22 @@
+#!/bin/bash
+#***********************************************************************
+#***                                                                 ***
+#*** APL\360 Automated Operator                                      ***
+#*** --------------------------                                      ***
+#***                                                                 ***
+#***   Increment APL\360 date at midnight:                           ***
+#***                                                                 ***
+#***    - Wait until 2 minutes after midnight.                       ***
+#***                                                                 ***
+#***    - Run APL\360 CORRDATE function to increment the date.       ***
+#***                                                                 ***
+#***    - Sign off to trigger new recording terminal session.        ***
+#***                                                                 ***
+#***   J. Winkelmann 2013/02/18                                      ***
+#***                                                                 ***
+#***********************************************************************
+sleep $(( 180 + $(date -d "23:59:00" +%s) - $(date +%s) ))
+echo "corrdate"
+sleep 10
+echo ")off"
+sleep 5

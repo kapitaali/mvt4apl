@@ -1,0 +1,80 @@
+#!/bin/bash
+#**********************************************************************
+#***                                                                ***
+#*** Script:  install_apl360                                        ***
+#***                                                                ***
+#*** Purpose: Install APL\360 on OS/360-MVT.                        ***
+#***                                                                ***
+#*** Updated: 2013/03/23                                            ***
+#***                                                                ***
+#**********************************************************************
+#
+# prepare
+#
+if [ -f aplinst/status ]; then
+   echo "APL\360 is already installed, use fresh mvt4apl copy to reinstall."
+   read -p "Press any key to terminate..."
+   exit
+fi
+if [ ! -f source/APL360_source_code.txt ]; then
+   echo "APL\360 source code missing, installation cannot start."
+   read -p "Press any key to terminate..."
+   exit
+fi
+echo "starting APL\360 installation..."
+read -p "Continue [Y/n]?:"
+REPLY=`echo $REPLY | tr '[:lower:]' '[:upper:]'`
+[ "$REPLY" == 'N' ] && exit
+[ "$REPLY" != '' -a "$REPLY" != 'Y' ] && exit
+#
+# set environment
+#
+if [[ `uname -m` == 'x86_64' ]];then arch=64;else arch=32;fi
+export PATH=hercules/linux/$arch/bin:$PATH
+export LD_LIBRARY_PATH=hercules/linux/$arch/lib:hercules/linux/$arch/lib/hercules:$LD_LIBRARY_PATH
+#
+# remove old output and log files
+#
+rm -f prt/JOB_output.txt
+rm -f log/mvtlog.txt
+rm -f ./aplinst.listings
+rm -f ./aplinst.log
+#
+# run automatic installation part 1
+#
+HERCULES_RC=aplinst/aplinst1.rc hercules -d -f conf/mvt_intcons.cnf
+#
+# save output and log files
+#
+mv prt/JOB_output.txt ./aplinst.listings
+mv log/mvtlog.txt ./aplinst.log
+#
+# run automatic installation part 2
+#
+HERCULES_RC=aplinst/aplinst2.rc hercules -d -f conf/mvt_intcons.cnf
+#
+# save output and log files
+#
+cat prt/JOB_output.txt >>aplinst.listings
+cat log/mvtlog.txt >>aplinst.log
+rm -f prt/JOB_output.txt
+rm -f log/mvtlog.txt
+#
+# create APL\360 library
+#
+HERCULES_RC=aplinst/aplcreate.rc hercules -d -f conf/mvt_intcons.cnf
+#
+# save output and log files
+#
+cat prt/JOB_output.txt >>aplinst.listings
+cat log/mvtlog.txt >>aplinst.log
+#
+# remove output and log files
+#
+rm -f prt/JOB_output.txt
+rm -f prt/STC_and_TSO_output.txt
+rm -f log/mvtlog.txt
+#
+# create status file
+#
+echo "APL\360 installed on $(date +"%d.%m.%Y %H:%M:%S.%2N")" > aplinst/status
